@@ -27,7 +27,18 @@ func main() {
 		log.Fatalf("failed to init vanity handler: %v", err)
 	}
 	handler := http.NewServeMux()
-	handler.Handle("/", h)
+	// Avoid vanity handler panic on "/" when no static/index is configured.
+	handler.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" || r.URL.Path == "" {
+			if vcsUrl != "" {
+				http.Redirect(w, r, vcsUrl, http.StatusFound)
+				return
+			}
+			http.NotFound(w, r)
+			return
+		}
+		h.ServeHTTP(w, r)
+	})
 	adapter := httpadapter.New(handler)
 	lambda.Start(adapter.ProxyWithContext)
 }
