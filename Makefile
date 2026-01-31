@@ -7,3 +7,7 @@ build:
 package:
 	zip function.zip bootstrap
 
+.PHONY: clean
+clean:
+	$(RM) function.zip bootstrap
+
