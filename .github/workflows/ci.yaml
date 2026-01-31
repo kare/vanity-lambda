@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+      - name: Set up Go
+        uses: actions/setup-go@v6.2.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Go version
+        run: go version
+      - name: Go vet
+        run: go vet ./...
+      - name: Go test
+        run: go test ./...
+      - name: Build Lambda binary (linux/arm64)
+        env:
+          GOOS: linux
+          GOARCH: arm64
+          CGO_ENABLED: 0
+        run: |
+          go build \
+            -trimpath \
+            -ldflags="-s -w" \
+            -o bootstrap \
+            .
+      - name: Verify bootstrap exists
+        run: test -f bootstrap
