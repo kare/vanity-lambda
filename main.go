@@ -39,6 +39,6 @@ func main() {
 		}
 		h.ServeHTTP(w, r)
 	})
-	adapter := httpadapter.New(handler)
+	adapter := httpadapter.NewV2(handler)
 	lambda.Start(adapter.ProxyWithContext)
 }
