@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/awslabs/aws-lambda-go-api-proxy/httpadapter"
@@ -31,7 +32,8 @@ func main() {
 	handler.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" || r.URL.Path == "" {
 			if vcsUrl != "" {
-				http.Redirect(w, r, vcsUrl, http.StatusFound)
+				base := strings.TrimRight(vcsUrl, "/")
+				http.Redirect(w, r, base+r.URL.Path, http.StatusFound)
 				return
 			}
 			http.NotFound(w, r)
