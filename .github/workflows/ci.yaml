@@ -10,7 +10,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
   build:
@@ -44,19 +43,3 @@ jobs:
             -ldflags="-s -w" \
             -o bootstrap \
             .
-      - name: Verify bootstrap exists
-        run: test -f bootstrap
-      - name: Package
-        run: |
-          zip function.zip bootstrap
-          test -f function.zip
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v5.1.1
-        with:
-          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
-          aws-region: eu-north-1
-      - name: Deploy to Lambda
-        run: |
-          aws lambda update-function-code \
-            --function-name kkn-vanity \
-            --zip-file fileb://function.zip

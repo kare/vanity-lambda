@@ -1,0 +1,57 @@
+name: CD
+on:
+  push:
+    tags:
+      - "v*"
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      ARTIFACT_BUCKET: ${{ vars.ARTIFACT_BUCKET }}
+      LAMBDA_NAME: ${{ vars.LAMBDA_NAME }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+      - name: Resolve version from tag
+        id: version
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Using version: $VERSION"
+      - name: Set up Go
+        uses: actions/setup-go@v6.2.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Build Lambda binary (linux/arm64)
+        env:
+          GOOS: linux
+          GOARCH: arm64
+          CGO_ENABLED: 0
+        run: |
+          go build -trimpath -ldflags="-s -w" -o bootstrap .
+      - name: Package
+        run: |
+          zip function.zip bootstrap
+          unzip -l function.zip
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v5.1.1
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Upload artifact to S3 (versioned path)
+        run: |
+          aws s3 cp function.zip \
+            s3://${ARTIFACT_BUCKET}/lambda/vanity-${{ steps.version.outputs.version }}/function.zip
+      - name: Update Lambda code from S3
+        run: |
+          aws lambda update-function-code \
+            --function-name ${LAMBDA_NAME} \
+            --s3-bucket ${ARTIFACT_BUCKET} \
+            --s3-key lambda/vanity-${{ steps.version.outputs.version }}/function.zip
