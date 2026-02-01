@@ -11,6 +11,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     name: Deploy
+    environment:
+      name: prod
+      url: https://kkn.fi/vanity
     env:
       AWS_REGION: ${{ vars.AWS_REGION }}
       ARTIFACT_BUCKET: ${{ vars.ARTIFACT_BUCKET }}
