@@ -43,6 +43,19 @@ jobs:
         run: |
           zip function.zip bootstrap
           unzip -l function.zip
+      - name: Debug selected role
+        run: |
+          echo "AWS_ROLE_ARN(vars)=${{ vars.AWS_ROLE_ARN }}"
+          echo "AWS_REGION(env)=${AWS_REGION}"
+          echo "GITHUB_REF=${GITHUB_REF}"
+      - name: Debug OIDC claims (payload)
+        run: |
+          set -euo pipefail
+          RAW="$(curl -sSf -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com")"
+          TOKEN="$(echo "$RAW" | python -c 'import sys,json; print(json.load(sys.stdin)["value"])')"
+          PAYLOAD="$(echo "$TOKEN" | cut -d. -f2 | tr '_-' '/+' | awk '{l=length($0)%4; if(l==2) $0=$0"=="; else if(l==3) $0=$0"="; print $0}' | base64 -d)"
+          echo "$PAYLOAD"
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v5.1.1
         with:
