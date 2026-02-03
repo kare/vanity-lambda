@@ -43,6 +43,11 @@ jobs:
         run: |
           zip function.zip bootstrap
           unzip -l function.zip
+      - name: Debug selected role
+        run: |
+          echo "AWS_ROLE_ARN(vars)=${{ vars.AWS_ROLE_ARN }}"
+          echo "AWS_REGION(env)=${AWS_REGION}"
+          echo "GITHUB_REF=${GITHUB_REF}"
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v5.1.1
         with:
